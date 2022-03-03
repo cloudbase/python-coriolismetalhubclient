@@ -1,3 +1,5 @@
+import json
+
 from cliff.lister import Lister
 from cliff.show import ShowOne
 
@@ -22,9 +24,9 @@ class Servers(Lister):
         for server in servers:
             item = [
                 server["id"],
-                server["hostname"],
+                server.get("hostname"),
                 server["api_endpoint"],
-                server["active"],
+                server.get("active"),
             ]
             items.append(item)
 
@@ -38,27 +40,32 @@ class ShowServer(ShowOne):
         parser = super(ShowServer, self).get_parser(prog_name)
         parser.add_argument("id", help="The ID of the server")
         return parser
-    
+
     def take_action(self, args):
         cli = client.get_client_from_options(
             self._cmd_options)
         server = cli.get_server(args.id)
-        import json
-        print(json.dumps(server, indent=2))
+        disks = server.get('disks', {})
+        nics = server.get('nics', {})
+
         columns = ('ID',
                    'Hostname',
                    "API Endpoint",
                    "Physical Cores",
                    "Memory",
                    "Firmware type",
-                   "Alive")
+                   "Alive",
+                   "Disks",
+                   "NICs")
         data = (server["id"],
-                server["hostname"],
+                server.get("hostname"),
                 server["api_endpoint"],
-                server["physical_cores"],
-                server["memory"],
-                server["firmware_type"],
-                server["active"])
+                server.get("physical_cores"),
+                server.get("memory"),
+                server.get("firmware_type"),
+                server.get("active"),
+                json.dumps(disks, indent=2),
+                json.dumps(nics, indent=2))
         return (columns, data)
 
 
@@ -68,7 +75,7 @@ class CreateServer(ShowOne):
         parser = super(CreateServer, self).get_parser(prog_name)
         parser.add_argument("endpoint", help="The endpoint of the server.")
         return parser
-    
+
     def take_action(self, args):
         cli = client.get_client_from_options(
             self._cmd_options)
@@ -81,10 +88,10 @@ class CreateServer(ShowOne):
                    "Firmware type",
                    "Alive")
         data = (server["id"],
-                server["hostname"],
+                server.get("hostname"),
                 server["api_endpoint"],
-                server["physical_cores"],
-                server["memory"],
-                server["firmware_type"],
-                server["active"])
+                server.get("physical_cores"),
+                server.get("memory"),
+                server.get("firmware_type"),
+                server.get("active"))
         return (columns, data)

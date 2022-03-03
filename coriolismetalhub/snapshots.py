@@ -1,4 +1,3 @@
-import os
 import json
 
 from cliff.lister import Lister
@@ -91,8 +90,7 @@ class ShowSnapshot(ShowOne):
             "Snapshot ID", "Server ID",
             "Disks",
         )
-        import json
-        print(json.dumps(snap, indent=2))
+
         disks = []
         for i in snap["volume_snapshots"]:
             snap_info = {
