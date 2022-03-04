@@ -1,8 +1,6 @@
-import sys
 import requests
 import urllib.parse as urlparse
 
-from prettytable import PrettyTable
 
 import urllib3
 urllib3.disable_warnings()
@@ -21,7 +19,7 @@ class _ClientBase(object):
     def _cli(self):
         if self._cli_obj is not None:
             return self._cli_obj
-        
+
         cert = (self._cert, self._key)
         sess = requests.Session()
         sess.cert = cert
@@ -30,7 +28,7 @@ class _ClientBase(object):
 
 
 class AgentClient(_ClientBase):
-    
+
     def list_disks(self, include_virtual=False):
         url = urlparse.urljoin(
             self._endpoint, "/api/v1/disks/")
@@ -141,7 +139,7 @@ class AgentClient(_ClientBase):
         if stream:
             return ret
         return ret.content
-    
+
     def systeminfo(self):
         url = urlparse.urljoin(
             self._endpoint, "/api/v1/systeminfo/")
