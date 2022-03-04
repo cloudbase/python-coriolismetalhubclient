@@ -178,6 +178,13 @@ class HubClient(_ClientBase):
         ret.raise_for_status()
         return ret.json()
 
+    def remove_server(self, serverID):
+        url = urlparse.urljoin(
+            self._endpoint, "/api/v1/servers/%s" % serverID)
+        ret = self._cli.delete(url)
+        ret.raise_for_status()
+        return
+
     def get_client_for_server(self, serverID):
         srv = self.get_server(serverID)
         cli = AgentClient(

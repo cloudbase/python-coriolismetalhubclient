@@ -1,5 +1,6 @@
 import json
 
+from cliff.command import Command
 from cliff.lister import Lister
 from cliff.show import ShowOne
 
@@ -95,3 +96,15 @@ class CreateServer(ShowOne):
                 server.get("firmware_type"),
                 server.get("active"))
         return (columns, data)
+
+
+class RemoveServer(Command):
+
+    def get_parser(self, prog_name):
+        parser = super(RemoveServer, self).get_parser(prog_name)
+        parser.add_argument("id", help="The ID of the server")
+        return parser
+
+    def take_action(self, args):
+        cli = client.get_client_from_options(self._cmd_options)
+        cli.remove_server(args.id)

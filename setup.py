@@ -49,6 +49,7 @@ setup(
             'server_list = coriolismetalhub.server:Servers',
             'server_show = coriolismetalhub.server:ShowServer',
             'server_add = coriolismetalhub.server:CreateServer',
+            'server_remove = coriolismetalhub.server:RemoveServer',
             'snapshot_list = coriolismetalhub.snapshots:ListSnapshots',
             'snapshot_show = coriolismetalhub.snapshots:ShowSnapshot',
             'snapshot_create = coriolismetalhub.snapshots:CreateSnapshot',
