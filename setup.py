@@ -35,7 +35,13 @@ setup(
     scripts=[],
 
     provides=[],
-    install_requires=['cliff', 'requests'],
+    install_requires=[
+        'cliff',
+        'keystoneauth1',
+        'requests',
+        'six',
+        'urllib3'
+    ],
 
     namespace_packages=[],
     packages=find_packages(),
