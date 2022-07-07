@@ -239,6 +239,27 @@ class HubClient(object):
         ret.raise_for_status()
         return ret.json()
 
+    def update_server(self, serverID, endpoint, cert=None, key=None, ca=None):
+        headers = self._auth_headers
+        data = {
+            "api_endpoint": endpoint,
+            "ca_cert": ca,
+            "tls_cert": cert,
+            "tls_key": key,
+        }
+        url = urlparse.urljoin(self._endpoint, "/api/v1/servers/%s" % serverID)
+        ret = requests.put(url, json=data, headers=headers)
+        ret.raise_for_status()
+        return ret.json()
+
+    def refresh_server(self, serverID):
+        headers = self._auth_headers
+        url = urlparse.urljoin(
+            self._endpoint, "/api/v1/servers/%s/refresh" % serverID)
+        ret = requests.get(url, headers=headers)
+        ret.raise_for_status()
+        return ret.json()
+
     def remove_server(self, serverID):
         headers = self._auth_headers
         url = urlparse.urljoin(
