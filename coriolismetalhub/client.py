@@ -32,23 +32,29 @@ _IDENTITY_API_VERSION_3 = ['3']
 
 class _HTTPSClientBase(object):
 
-    def __init__(self, endpoint, cert, key, ca):
-        self._cert = cert
-        self._key = key
-        self._ca = ca
+    def __init__(self, endpoint, client_certs, ks_session=None):
+        self._cert = client_certs['cert']
+        self._key = client_certs['key']
+        self._ca = client_certs['ca']
         self._cli_obj = None
         self._endpoint = endpoint
+        self._ks_session = ks_session
+        self._ks_cli_obj = None
 
     @property
     def _cli(self):
-        if self._cli_obj is not None:
-            return self._cli_obj
+        if self._cli_obj is None:
+            cert = (self._cert, self._key)
+            self._cli_obj = requests.Session()
+            self._cli_obj.cert = cert
+            self._cli_obj.verify = self._ca
+        return self._cli_obj
 
-        cert = (self._cert, self._key)
-        sess = requests.Session()
-        sess.cert = cert
-        sess.verify = self._ca
-        return sess
+    @property
+    def _ks_cli(self):
+        if self._ks_cli_obj is None:
+            self._ks_cli_obj = KeystoneClient(session=self._ks_session)
+        return self._ks_cli_obj
 
 
 class KeystoneClient(adapter.Adapter):
@@ -185,17 +191,7 @@ class AgentClient(_HTTPSClientBase):
         return ret.json()
 
 
-class HubClient(object):
-    def __init__(
-            self, endpoint, client_certs, ks_session=None):
-        self._endpoint = endpoint
-        if ks_session:
-            self._ks_cli = KeystoneClient(session=ks_session)
-
-        self._cert = client_certs['cert']
-        self._key = client_certs['key']
-        self._ca = client_certs['ca']
-
+class HubClient(_HTTPSClientBase):
     @property
     def _token(self):
         return self._ks_cli.get_token()
@@ -213,15 +209,15 @@ class HubClient(object):
         if hostname_like is not None:
             params = {"hostname": hostname_like}
         url = urlparse.urljoin(self._endpoint, "/api/v1/servers")
-        ret = requests.get(url, params=params, headers=headers)
+        ret = self._cli.get(url, params=params, headers=headers)
         ret.raise_for_status()
         return ret.json()
 
-    def get_server(self, serverID):
+    def get_server(self, server_id):
         headers = self._auth_headers
         url = urlparse.urljoin(
-            self._endpoint, "/api/v1/servers/%s" % serverID)
-        ret = requests.get(url, headers=headers)
+            self._endpoint, "/api/v1/servers/%s" % server_id)
+        ret = self._cli.get(url, headers=headers)
         ret.raise_for_status()
         return ret.json()
 
@@ -235,11 +231,11 @@ class HubClient(object):
         }
         url = urlparse.urljoin(
             self._endpoint, "/api/v1/servers/")
-        ret = requests.post(url, json=data, headers=headers)
+        ret = self._cli.post(url, json=data, headers=headers)
         ret.raise_for_status()
         return ret.json()
 
-    def update_server(self, serverID, endpoint, cert=None, key=None, ca=None):
+    def update_server(self, server_id, endpoint, cert=None, key=None, ca=None):
         headers = self._auth_headers
         data = {
             "api_endpoint": endpoint,
@@ -247,34 +243,33 @@ class HubClient(object):
             "tls_cert": cert,
             "tls_key": key,
         }
-        url = urlparse.urljoin(self._endpoint, "/api/v1/servers/%s" % serverID)
-        ret = requests.put(url, json=data, headers=headers)
+        url = urlparse.urljoin(
+            self._endpoint, "/api/v1/servers/%s" % server_id)
+        ret = self._cli.put(url, json=data, headers=headers)
         ret.raise_for_status()
         return ret.json()
 
-    def refresh_server(self, serverID):
+    def refresh_server(self, server_id):
         headers = self._auth_headers
         url = urlparse.urljoin(
-            self._endpoint, "/api/v1/servers/%s/refresh" % serverID)
-        ret = requests.get(url, headers=headers)
+            self._endpoint, "/api/v1/servers/%s/refresh" % server_id)
+        ret = self._cli.get(url, headers=headers)
         ret.raise_for_status()
         return ret.json()
 
-    def remove_server(self, serverID):
+    def remove_server(self, server_id):
         headers = self._auth_headers
         url = urlparse.urljoin(
-            self._endpoint, "/api/v1/servers/%s" % serverID)
-        ret = requests.delete(url, headers=headers)
+            self._endpoint, "/api/v1/servers/%s" % server_id)
+        ret = self._cli.delete(url, headers=headers)
         ret.raise_for_status()
         return
 
-    def get_client_for_server(self, serverID):
-        srv = self.get_server(serverID)
+    def get_client_for_server(self, server_id):
+        srv = self.get_server(server_id)
+        client_certs = {"cert": self._cert, "key": self._key, "ca": self._ca}
         cli = AgentClient(
-            endpoint=srv["api_endpoint"],
-            cert=self._cert,
-            key=self._key,
-            ca=self._ca)
+            endpoint=srv["api_endpoint"], client_certs=client_certs)
         return cli
 
 def _get_tls_auth_kwargs_from_options(options):
