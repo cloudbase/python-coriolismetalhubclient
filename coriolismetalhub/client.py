@@ -1,10 +1,7 @@
 import logging
-import traceback
 
 from keystoneauth1 import adapter
-from keystoneauth1 import session
-from keystoneauth1.exceptions import catalog
-from keystoneauth1.exceptions import http
+from keystoneauth1 import session as ks_sess
 from keystoneauth1.identity import v2
 from keystoneauth1.identity import v3
 import requests
@@ -14,8 +11,6 @@ import urllib.parse as urlparse
 
 import urllib3
 urllib3.disable_warnings()
-
-from coriolismetalhub import exceptions
 
 
 LOG = logging.getLogger(__name__)
@@ -101,7 +96,7 @@ class AgentClient(_HTTPSClientBase):
         return ret.json()
 
     def create_snapstore_mapping(self, snapstore_id, disk_id):
-        data =  {
+        data = {
             "snapstore_location_id": snapstore_id,
             "tracked_disk_id": disk_id,
         }
@@ -272,6 +267,7 @@ class HubClient(_HTTPSClientBase):
             endpoint=srv["api_endpoint"], client_certs=client_certs)
         return cli
 
+
 def _get_tls_auth_kwargs_from_options(options):
     if None in (options.endpoint,
                 options.client_cert,
@@ -306,26 +302,26 @@ def check_auth_arguments(args, api_version=None, raise_exc=False):
         args.os_project_name and args.os_project_domain_id
     ]
     v2_arg_combinations = [args.os_tenant_id, args.os_tenant_name]
+    msg = None
 
     # Keystone V3
     if not api_version or api_version == _DEFAULT_IDENTITY_API_VERSION:
         if not any(v3_arg_combinations):
             msg = ('ERROR: please specify the following --os-project-id or'
-                    ' (--os-project-name and --os-project-domain-name) or '
-                    ' (--os-project-name and --os-project-domain-id)')
+                   ' (--os-project-name and --os-project-domain-name) or '
+                   ' (--os-project-name and --os-project-domain-id)')
             successful = False
     # Keystone V2
     else:
         if not any(v2_arg_combinations):
             msg = ('ERROR: please specify --os-tenant-id or'
-                    ' --os-tenant-name')
+                   ' --os-tenant-name')
             successful = False
 
     if not successful and raise_exc:
         raise Exception(msg)
 
     return successful
-
 
 
 def build_kwargs_based_on_version(args, api_version=None):
@@ -359,7 +355,7 @@ def create_keystone_session(args, api_version, kwargs_dict, auth_type):
         method = v2.Token if auth_type == 'token' else v2.Password
     else:
         if not api_version or api_version not in _IDENTITY_API_VERSION_3:
-            LOG.warn(
+            LOG.warning(
                 "The identity version <{0}> is not in supported "
                 "versions <{1}>, falling back to <{2}>.".format(
                     api_version,
@@ -371,11 +367,11 @@ def create_keystone_session(args, api_version, kwargs_dict, auth_type):
 
     auth = method(**kwargs)
 
-    return session.Session(auth=auth)
+    return ks_sess.Session(auth=auth)
 
 
 def get_client_from_options(options):
-    client_certs =  _get_tls_auth_kwargs_from_options(options)
+    client_certs = _get_tls_auth_kwargs_from_options(options)
     created_client = None
 
     api_version = options.os_identity_api_version
